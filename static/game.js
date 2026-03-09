@@ -299,8 +299,11 @@ function enterOtherTextHistoryMode() {
         child.dataset.hiddenByTextHistory = 'true';
     });
     
-    // 创建并显示其他文本历史界面
-    const historyPanel = createTextHistoryPanel('other');
+    // 保存当前的已阅读标记（用于判断上次阅读位置）
+    const previousReadKey = lastReadOtherTextKey;
+    
+    // 创建并显示其他文本历史界面，传递上次阅读位置
+    const historyPanel = createTextHistoryPanel('other', previousReadKey);
     historyPanel.id = 'other-text-history-panel';
     gameContent.appendChild(historyPanel);
     

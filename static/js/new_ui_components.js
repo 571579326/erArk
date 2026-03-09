@@ -121,7 +121,7 @@ function escapeHtml(text) {
  * @param {string} type - 'instruct' 指令文本回溯 或 'other' 其他文本回溯
  * @returns {HTMLElement} 文本回溯面板元素
  */
-function createTextHistoryPanel(type = 'instruct') {
+function createTextHistoryPanel(type = 'instruct', lastReadKey = null) {
     const panel = document.createElement('div');
     panel.className = 'text-history-panel';
     
@@ -129,6 +129,18 @@ function createTextHistoryPanel(type = 'instruct') {
     const cache = type === 'other' ? otherTextHistoryCache : textHistoryCache;
     const titleText = type === 'other' ? '其他文本回溯' : '指令文本回溯';
     const exitFunc = type === 'other' ? exitOtherTextHistoryMode : exitTextHistoryMode;
+    
+    // 检查是否需要显示上次阅读位置标记（仅对其他文本回溯）
+    let lastReadIndex = -1;
+    let shouldShowLastReadMarker = false;
+    if (type === 'other' && lastReadKey && cache.length > 0) {
+        // 查找上次阅读位置的索引
+        lastReadIndex = cache.findIndex(item => item.contentKey === lastReadKey);
+        // 检查条件：上次阅读位置存在且不是最后一条
+        if (lastReadIndex !== -1 && lastReadIndex < cache.length - 1) {
+            shouldShowLastReadMarker = true;
+        }
+    }
     
     // ========== 头部区域 ==========
     const header = document.createElement('div');
@@ -171,6 +183,8 @@ function createTextHistoryPanel(type = 'instruct') {
         currentLine.className = 'text-history-line';
         content.appendChild(currentLine);
         
+        let lastReadMarkerElement = null;  // 用于滚动定位
+        
         cache.forEach((item, index) => {
             const element = createTextHistoryElement(item);
             if (element) {
@@ -186,15 +200,39 @@ function createTextHistoryPanel(type = 'instruct') {
                     currentLine.appendChild(lineBreak);
                 }
             }
+            
+            // 在上次阅读位置后插入标记
+            if (shouldShowLastReadMarker && index === lastReadIndex) {
+                const marker = document.createElement('div');
+                marker.className = 'text-history-last-read-marker';
+                marker.innerHTML = '<span class="marker-line"></span><span class="marker-text">上次阅读位置</span><span class="marker-line"></span>';
+                content.appendChild(marker);
+                lastReadMarkerElement = marker;
+                
+                // 创建新行继续渲染后续内容
+                currentLine = document.createElement('div');
+                currentLine.className = 'text-history-line';
+                content.appendChild(currentLine);
+            }
         });
+        
+        // 滚动处理
+        setTimeout(() => {
+            // 如果有上次阅读标记且需要滚动（内容超出一屏）
+            if (lastReadMarkerElement && content.scrollHeight > content.clientHeight) {
+                // 滚动到标记位置居中
+                const markerTop = lastReadMarkerElement.offsetTop;
+                const containerHeight = content.clientHeight;
+                const scrollTarget = markerTop - (containerHeight / 2);
+                content.scrollTop = Math.max(0, scrollTarget);
+            } else {
+                // 默认滚动到底部（显示最新的文本）
+                content.scrollTop = content.scrollHeight;
+            }
+        }, 0);
     }
     
     panel.appendChild(content);
-    
-    // 滚动到底部（显示最新的文本）
-    setTimeout(() => {
-        content.scrollTop = content.scrollHeight;
-    }, 0);
     
     return panel;
 }

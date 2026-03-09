@@ -2188,7 +2188,16 @@
 - [x] 在 `createPanelTabsBar()` 创建"其他文本回溯"按钮时，调用 `hasUnreadOtherText()` 检查是否显示红点
 - [x] 在 `clearOtherTextHistory()` 中重置 `lastReadOtherTextKey` 为 null
 
-##### 10. 文档更新
+##### 10. 上次阅读位置标记功能（2026-03-09新增）
+- [x] 修改 `enterOtherTextHistoryMode()` 函数，在更新 `lastReadOtherTextKey` 之前保存 `previousReadKey`
+- [x] 修改 `createTextHistoryPanel(type, lastReadKey)` 函数签名，添加 `lastReadKey` 参数
+- [x] 在 `createTextHistoryPanel()` 中查找 `lastReadKey` 对应的缓存索引 `lastReadIndex`
+- [x] 判断是否需要显示标记：`lastReadIndex` 存在且不是最后一条
+- [x] 在渲染循环中，当 `index === lastReadIndex` 时插入"上次阅读位置"标记元素
+- [x] 滚动处理：如果有标记且内容超出一屏，滚动到标记位置居中；否则滚动到底部
+- [x] 在 `static/css/style.css` 中添加 `.text-history-last-read-marker` 相关样式
+
+##### 11. 文档更新
 - [x] 更新 `Web绘制模式UI重构说明文档.md` 中的面板选项卡栏章节
 - [x] 添加"2.2.1.2 文本回溯功能"子章节，描述双缓存机制
 - [x] 更新本实现流程文档
