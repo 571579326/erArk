@@ -65,11 +65,8 @@ jobs:
         run: |
           # 创建图片资源包目录
           New-Item -ItemType Directory -Force erArk_Images
-          New-Item -ItemType Directory -Force erArk_Images/image
-          # 复制除状态条以外的所有图片文件夹
-          Copy-Item erArk/image/场景 erArk_Images/image/ -Recurse
-          Copy-Item erArk/image/断面图 erArk_Images/image/ -Recurse
-          Copy-Item erArk/image/立绘 erArk_Images/image/ -Recurse
+          # 复制整个 image 文件夹
+          Copy-Item erArk/image erArk_Images/ -Recurse
           # 打包图片资源
           Compress-Archive -Path erArk_Images\* -DestinationPath erArk_Images.zip
 
@@ -81,6 +78,8 @@ jobs:
           Remove-Item erArk_Lite/image/场景 -Recurse -Force -ErrorAction SilentlyContinue
           Remove-Item erArk_Lite/image/断面图 -Recurse -Force -ErrorAction SilentlyContinue
           Remove-Item erArk_Lite/image/立绘 -Recurse -Force -ErrorAction SilentlyContinue
+          # 删除轻量版中的图片版本文件
+          Remove-Item erArk_Lite/image/package.json -Force -ErrorAction SilentlyContinue
           # 先创建场景文件夹
           New-Item -ItemType Directory -Force erArk_Lite/image/场景
           # 保留场景的基础图片
@@ -173,6 +172,13 @@ jobs:
           path: package.json
           property: version
 
+      - name: Read Image Version
+        id: image_version
+        uses: ashley-taylor/read-json-property-action@v1.0
+        with:
+          path: image/package.json
+          property: version
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -238,6 +244,6 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ${{ github.workspace }}/erArk_Images.zip
-          asset_name: erArk_Images_${{steps.version.outputs.value}}.zip
+          asset_name: erArk_Images_${{steps.image_version.outputs.value}}.zip
           asset_content_type: application/zip
   
