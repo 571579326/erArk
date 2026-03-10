@@ -3,6 +3,7 @@ import random
 from functools import wraps
 from types import FunctionType
 from Script.Core import cache_control, constant, game_type, get_text, text_handle, rich_text
+from Script.Core.web_server import emit_realtime_text
 from Script.Design import attr_text, attr_calculation, handle_premise, talk, game_time, second_behavior
 from Script.Config import game_config, normal_config
 from Script.System.Instruct_System import handle_instruct
@@ -368,6 +369,8 @@ def handle_settle_behavior(character_id: int, now_time: datetime.datetime, event
         # Web模式下捕获结算文本用于文本回溯
         if cache.web_mode and now_text.strip():
             cache.web_instruct_texts.append(now_text)
+            # 实时推送文本到前端
+            emit_realtime_text(now_text, "instruct")
         
         return now_panel
 

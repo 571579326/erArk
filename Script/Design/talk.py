@@ -3,6 +3,7 @@ import re
 from types import FunctionType
 
 from Script.Core import cache_control, game_type, value_handle, get_text, constant, rich_text
+from Script.Core.web_server import emit_realtime_text
 from Script.Design import map_handle, handle_premise, talk_image
 from Script.UI.Moudle import draw
 from Script.Config import normal_config, game_config
@@ -336,6 +337,8 @@ def handle_talk_draw(character_id: int, talk_text: str, now_talk_id: str, second
             # 将描述文本添加到Web结算文本缓存，用于文本回溯功能
             if now_talk_text:
                 cache.web_instruct_texts.append(now_talk_text)
+                # 实时推送文本到前端
+                emit_realtime_text(now_talk_text, "instruct")
             from Script.System.Web_Draw_System.dialog_box import add_dialog_text
             # 获取说话者名称
             speaker_name = character_data.name

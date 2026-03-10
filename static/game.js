@@ -520,6 +520,14 @@ function initWebSocket() {
         renderGameState(data);
     });
     
+    // 接收实时文本推送事件
+    socket.on('realtime_text', (data) => {
+        // 如果正在结算中，仅将其他文本（非指令文本）添加到结算遮罩的流动显示区域
+        if (isSettlementInProgress() && data.text && data.type === 'other') {
+            appendSettlementFlowText(data.text);
+        }
+    });
+    
     // 接收大类型选择结果事件
     socket.on('major_type_selected', (data) => {
         console.log('收到大类型选择结果:', data);
@@ -655,6 +663,16 @@ function initWebSocket() {
             console.error('获取场景角色失败:', data.error);
         }
     });
+    
+    // 接收结算状态更新事件
+    socket.on('settlement_status', (data) => {
+        console.log('收到结算状态更新:', data);
+        if (data.is_settling) {
+            showSettlementOverlay();
+        } else {
+            hideSettlementOverlay();
+        }
+    });
 }
 
 /**
@@ -670,6 +688,128 @@ function clearCroppedImageCache() {
     }
     croppedImageCache.clear();
     console.log('[图片缓存] 前端裁切图片缓存已清理');
+}
+
+/**
+ * 显示结算提示遮罩
+ * 当后端进入时间推进结算时调用，提示用户正在处理
+ */
+function showSettlementOverlay() {
+    // 检查是否已存在遮罩
+    let overlay = document.getElementById('settlement-overlay');
+    if (overlay) {
+        overlay.classList.remove('hidden');
+        // 清空之前的流动文本
+        const flowContainer = overlay.querySelector('.settlement-flow-container');
+        if (flowContainer) {
+            flowContainer.innerHTML = '';
+        }
+        return;
+    }
+    
+    // 创建遮罩元素
+    overlay = document.createElement('div');
+    overlay.id = 'settlement-overlay';
+    overlay.className = 'settlement-overlay';
+    overlay.innerHTML = `
+        <div class="settlement-flow-container"></div>
+        <div class="settlement-content">
+            <div class="settlement-spinner"></div>
+            <div class="settlement-text">正在结算中，请稍候...</div>
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    console.log('[结算提示] 显示结算遮罩');
+}
+
+/**
+ * 检查是否正在结算中
+ * @returns {boolean} 是否正在结算
+ */
+function isSettlementInProgress() {
+    const overlay = document.getElementById('settlement-overlay');
+    return overlay && !overlay.classList.contains('hidden');
+}
+
+/**
+ * 向结算遮罩添加流动文本
+ * 黑客帝国风格的绿色文本在随机位置出现，向上浮动并淡出
+ * @param {Object|string} textItem - 文本项，可以是字符串或包含text属性的对象
+ */
+function appendSettlementFlowText(textItem) {
+    const overlay = document.getElementById('settlement-overlay');
+    if (!overlay) return;
+    
+    const flowContainer = overlay.querySelector('.settlement-flow-container');
+    if (!flowContainer) return;
+    
+    // 提取文本内容
+    let text = '';
+    if (typeof textItem === 'string') {
+        text = textItem;
+    } else if (textItem && textItem.text) {
+        text = textItem.text;
+    } else if (textItem && textItem.content) {
+        text = textItem.content;
+    }
+    
+    // 忽略空文本和纯换行
+    if (!text || text.trim() === '' || text === '\n') return;
+    
+    // 创建新的文本行
+    const line = document.createElement('div');
+    line.className = 'settlement-flow-line';
+    line.textContent = text.trim();
+    
+    // 计算随机位置 - 在容器范围内随机分布
+    // 水平位置：预留一定边距，避免文本被裁切
+    const containerWidth = flowContainer.offsetWidth || window.innerWidth;
+    const containerHeight = flowContainer.offsetHeight || window.innerHeight;
+    
+    // 估算文本宽度（大约每个字符10px）
+    const estimatedTextWidth = Math.min(text.length * 10, containerWidth * 0.6);
+    const maxX = Math.max(0, containerWidth - estimatedTextWidth - 40);
+    const randomX = Math.floor(Math.random() * maxX) + 20;
+    
+    // 垂直位置：在中上部区域随机出现（底部预留空间给提示框）
+    const minY = containerHeight * 0.1;
+    const maxY = containerHeight * 0.75;
+    const randomY = Math.floor(Math.random() * (maxY - minY)) + minY;
+    
+    // 设置随机位置
+    line.style.left = randomX + 'px';
+    line.style.top = randomY + 'px';
+    
+    // 添加到容器
+    flowContainer.appendChild(line);
+    
+    // 1秒后自动删除元素（动画结束后）
+    setTimeout(() => {
+        if (line.parentNode) {
+            line.parentNode.removeChild(line);
+        }
+    }, 1000);
+    
+    console.log('[结算流动文本]', text.substring(0, 50) + (text.length > 50 ? '...' : ''));
+}
+
+/**
+ * 隐藏结算提示遮罩
+ * 当后端结算完成时调用
+ */
+function hideSettlementOverlay() {
+    const overlay = document.getElementById('settlement-overlay');
+    if (overlay) {
+        overlay.classList.add('hidden');
+        // 延迟一小段时间后移除元素，以便可以看到隐藏动画
+        setTimeout(() => {
+            if (overlay.parentNode) {
+                overlay.parentNode.removeChild(overlay);
+            }
+        }, 300);
+        console.log('[结算提示] 隐藏结算遮罩');
+    }
 }
 
 /**

@@ -3949,6 +3949,86 @@ children.forEach(child => {
 - 修复后，从子菜单点击"头部"或"臀部"选项会正确显示该部位的指令列表
 - 复合部位的展开逻辑只在直接点击角色立绘上的按钮时触发
 
+### 10.11 结算提示遮罩功能（2026-03-10）
+
+#### 10.11.1 需求描述
+当从子面板（如睡觉面板）确认进入时间推进结算时，由于结算过程可能较长，会导致界面长时间无响应，用户可能误以为游戏卡死。
+
+#### 10.11.2 解决方案
+在前端添加结算提示遮罩，当后端进入时间推进结算时显示提示信息，结算完成后隐藏。同时在遮罩背景中显示结算过程中的文本流动，让用户能感知到游戏正在处理。
+
+#### 10.11.3 实现细节
+1. **后端状态通知**：
+   - 在 `web_server.py` 中新增 `emit_settlement_status(is_settling: bool)` 函数
+   - 通过 WebSocket 发送 `settlement_status` 事件通知前端
+
+2. **结算标志触发**：
+   - 在 `character_behavior.py` 的 `init_character_behavior()` 函数中：
+     - 设置 `cache.web_text_recording_flag = True` 后调用 `emit_settlement_status(True)`
+     - 设置 `cache.web_text_recording_flag = False` 后调用 `emit_settlement_status(False)`
+
+3. **前端界面**：
+   - 在 `game.js` 中添加 `settlement_status` 事件监听器
+   - 新增 `showSettlementOverlay()` 和 `hideSettlementOverlay()` 函数
+   - 显示半透明遮罩层和旋转加载动画，提示"正在结算中，请稍候..."
+
+4. **CSS样式**：
+   - 在 `style.css` 中添加 `.settlement-overlay` 相关样式
+   - 使用 `@keyframes settlement-spin` 实现旋转动画
+
+5. **流动文本显示**（2026-03-10更新）：
+   - 在遮罩中添加 `.settlement-flow-container` 容器
+   - **仅使用实时推送机制**：通过 `socket.on('realtime_text', ...)` 接收文本，不再使用 `game_state_update` 的批量推送
+   - 新增 `isSettlementInProgress()` 函数检查结算状态
+   - 新增 `appendSettlementFlowText(textItem)` 函数处理流动文本
+   - 黑客帝国风格：使用 `rgba(0, 255, 65)` 绿色，等宽字体，文本发光效果
+   - **随机位置浮动效果**（2026-03-10重构）：
+     - **仅显示其他文本**（type="other"），不显示指令文本
+     - 每条文本在背景的随机位置出现（水平方向考虑文本长度，垂直方向在10%-75%区域）
+     - 文本出现后使用 `settlement-float-up` 动画在1秒内向上浮动约60px（约3行距离）
+     - 浮动过程中透明度从0.9逐渐降至0，实现淡出效果
+     - 1秒后自动从DOM中移除该文本元素
+     - 同时出现的文本数量无上限，每条文本独立渲染和动画
+     - 字体大小为 1.05em，相比原版本增大了2号
+
+#### 10.11.4 修改文件清单
+| 文件路径 | 修改内容 | 状态 |
+|---------|---------|------|
+| `Script/Core/web_server.py` | 新增 `emit_settlement_status()` 函数 | ✅ |
+| `Script/Design/character_behavior.py` | 在结算开始和结束时调用 `emit_settlement_status()` | ✅ |
+| `static/game.js` | 添加 `settlement_status` 监听器、遮罩显示/隐藏函数、流动文本函数 | ✅ |
+| `static/css/style.css` | 添加结算提示遮罩样式和流动文本样式 | ✅ |
+
+#### 10.11.5 实时文本推送机制（2026-03-10重构）
+
+**变更背景**：
+原机制为收集所有文本到 `cache.web_instruct_texts` 和 `cache.web_other_texts`，然后在 `update_game_state()` 调用时一次性推送到前端。
+新机制改为每获取到一条文本就立即通过 WebSocket 推送到前端。
+
+**实现细节**：
+1. **新增实时推送函数** (`web_server.py`)：
+   - `emit_realtime_text(text, text_type)` - 立即推送单条文本到前端
+   - `text_type` 可选值: `"instruct"` (指令文本) 或 `"other"` (其他文本)
+
+2. **修改文本收集逻辑**：
+   - `io_web.py` 的 `append_current_draw_element()` 在收集文本时同时调用 `emit_realtime_text(string, "other")`
+   - `talk.py` 的 `handle_talk_draw()` 在收集口上文本时同时调用 `emit_realtime_text(now_talk_text, "instruct")`
+   - `settle_behavior.py` 的 `handle_settle_behavior()` 在收集结算文本时同时调用 `emit_realtime_text(now_text, "instruct")`
+
+3. **前端监听新事件** (`game.js`)：
+   - 添加 `socket.on('realtime_text', ...)` 监听器
+   - **仅处理 `type === 'other'` 的文本**，指令文本不在遮罩上显示
+   - 收到其他文本后调用 `appendSettlementFlowText()` 在结算遮罩上显示浮动文本
+
+4. **文件清单**：
+| 文件路径 | 修改内容 | 状态 |
+|---------|---------|------|
+| `Script/Core/web_server.py` | 新增 `emit_realtime_text()` 函数 | ✅ |
+| `Script/Core/io_web.py` | 修改 `append_current_draw_element()` 调用实时推送 | ✅ |
+| `Script/Design/talk.py` | 修改口上文本处理调用实时推送 | ✅ |
+| `Script/Design/settle_behavior.py` | 修改结算文本处理调用实时推送 | ✅ |
+| `static/game.js` | 添加 `realtime_text` 事件监听器 | ✅ |
+
 ---
 
 ## 阶段十一：UI视觉优化 ✅

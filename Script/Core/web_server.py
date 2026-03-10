@@ -2401,6 +2401,50 @@ def _emit_game_state_update():
         # 记录推送失败的错误
         logging.error(f"推送游戏状态失败: {str(e)}")
 
+
+def emit_settlement_status(is_settling: bool):
+    """
+    发送结算状态到前端
+    
+    参数：
+    is_settling (bool): 是否正在进行结算
+    
+    返回值类型：无
+    功能描述：通过WebSocket通知前端当前是否正在进行时间推进结算。
+              用于在子面板触发结算时显示提示信息，避免用户误以为界面卡死。
+    """
+    try:
+        socketio.emit('settlement_status', {
+            'is_settling': is_settling
+        })
+        logging.debug(f"发送结算状态: is_settling={is_settling}")
+    except Exception as e:
+        logging.error(f"发送结算状态失败: {str(e)}")
+
+
+def emit_realtime_text(text: str, text_type: str = "other"):
+    """
+    实时推送单条文本到前端
+    
+    参数：
+    text (str): 要推送的文本内容
+    text_type (str): 文本类型，可选值为 "instruct"（指令文本）或 "other"（其他文本）
+    
+    返回值类型：无
+    功能描述：每获取到一条文本就立即通过WebSocket推送到前端，
+              而不是等待收集完毕后一次性推送。用于在结算过程中实时显示文本。
+    """
+    if not text or not text.strip():
+        return
+    try:
+        socketio.emit('realtime_text', {
+            'text': text,
+            'type': text_type
+        })
+    except Exception as e:
+        logging.error(f"实时推送文本失败: {str(e)}")
+
+
 def get_button_response():
     """
     获取按钮点击响应

@@ -44,6 +44,9 @@ def init_character_behavior():
     # 开始记录文本（用于Web模式文本回溯）
     if hasattr(cache, 'web_mode') and cache.web_mode:
         cache.web_text_recording_flag = True
+        # 通知前端显示结算提示
+        from Script.Core import web_server
+        web_server.emit_settlement_status(True)
     cache.over_behavior_character = set()
     new_day_flag = True
     while 1:
@@ -88,6 +91,9 @@ def init_character_behavior():
     # 结束记录文本（用于Web模式文本回溯）
     if hasattr(cache, 'web_mode') and cache.web_mode:
         cache.web_text_recording_flag = False
+        # 通知前端隐藏结算提示
+        from Script.Core import web_server
+        web_server.emit_settlement_status(False)
 
 
 def character_behavior(character_id: int, now_time: datetime.datetime, pl_start_time: datetime.datetime):

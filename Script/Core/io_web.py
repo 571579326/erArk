@@ -11,7 +11,7 @@ import json
 import copy
 from typing import Dict, Any
 from Script.Core import cache_control
-from Script.Core.web_server import update_game_state
+from Script.Core.web_server import update_game_state, emit_realtime_text
 
 # 全局变量
 cache = cache_control.cache
@@ -144,6 +144,8 @@ def append_current_draw_element(element: Dict[str, Any], record_history: bool = 
             # 排除空白和纯换行符
             if text_content and text_content != "\n":
                 cache.web_other_texts.append(string)
+                # 实时推送文本到前端
+                emit_realtime_text(string, "other")
             # 已记录的文本（包括空白和换行符）不再推送到前端显示
             return
     cache.current_draw_elements.append(element)

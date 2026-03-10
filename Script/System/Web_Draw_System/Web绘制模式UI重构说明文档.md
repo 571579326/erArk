@@ -238,7 +238,11 @@
       - 通过 `cache.web_text_recording_flag` 标志控制记录时机
       - 在 `character_behavior.init_character_behavior()` 开头设置为 True，结束时设置为 False
       - **已记录到 `cache.web_other_texts` 的文本不再推送到前端显示**，避免重复
-    - 前端通过 `state.other_texts` 一次性接收所有文本
+    - **实时推送机制**（2026-03-10新增）：
+      - 每获取到一条文本就通过 `emit_realtime_text()` 立即推送到前端
+      - 前端通过 `socket.on('realtime_text', ...)` 接收实时文本
+      - 结算遮罩显示时，仅显示其他文本（type="other"）以浮动效果显示在遮罩上
+      - **不再使用一次性批量推送**，完全依赖实时推送机制
   - 缓存支持的类型：
     - 其他文本：`other` - io_web.py收集的行为循环期间的文本
 
