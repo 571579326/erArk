@@ -94,6 +94,7 @@ def settle_assembly_line(newdayflag = False, draw_flag = True):
 
     # 结算基建模块的当场生效
     hospital_bed_modules = 0
+    extra_warehouse_modules = 0
 
     # 遍历流水线
     for assembly_line_id in cache.rhodes_island.assembly_line:
@@ -134,6 +135,9 @@ def settle_assembly_line(newdayflag = False, draw_flag = True):
                 # 如果是住院病房扩展模块，则增加到记录中
                 if product_id == 54:
                     hospital_bed_modules += produce_num
+                # 如果是仓储空间扩展模块，则增加到记录中
+                elif product_id == 55:
+                    extra_warehouse_modules += produce_num
 
                 now_text = _("\n 流水线{0}:").format(assembly_line_id)
                 now_text += _("上次结算是{0}时，到现在已过{1}小时，").format(cache.rhodes_island.assembly_line[assembly_line_id][4], max_time)
@@ -175,6 +179,21 @@ def settle_assembly_line(newdayflag = False, draw_flag = True):
             now_draw = draw.WaitDraw()
             now_draw.width = window_width
             now_draw.text = hospital_bed_modules_text
+            now_draw.draw()
+
+    # 结算仓储空间扩展模块
+    if extra_warehouse_modules > 0:
+        # 结算模块数量
+        cache.rhodes_island.used_extra_warehouse_capacity_module += extra_warehouse_modules
+        # 增加仓库容量
+        cache.rhodes_island.warehouse_capacity += extra_warehouse_modules * 1000
+        # 绘制信息
+        extra_warehouse_modules_text = _("○由于生产了{0}个仓储空间扩展模块，罗德岛仓库容量提升了{1}！\n").format(extra_warehouse_modules, extra_warehouse_modules * 1000)
+        return_text += extra_warehouse_modules_text
+        if draw_flag:
+            now_draw = draw.WaitDraw()
+            now_draw.width = window_width
+            now_draw.text = extra_warehouse_modules_text
             now_draw.draw()
 
     return un_normal, return_text

@@ -1208,6 +1208,8 @@ class Rhodes_Island:
         """ 仓库容量 """
         self.materials_resouce: Dict[int, int] = {}
         """ 素材资源 """
+        self.used_extra_warehouse_capacity_module: int = 0
+        """ 已使用的仓储空间扩展模块数量 """
 
         # 生活娱乐区
         self.life_zone_max: int = 0
