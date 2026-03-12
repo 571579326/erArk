@@ -199,6 +199,27 @@ def auto_trade_resources() -> None:
             sell_percent = settings.get("sell_price_percent", 0)
             cache.rhodes_island.materials_resouce.setdefault(resouce_id, 0)
 
+            # 自动卖出
+            if (
+                sell_on and
+                sell_stock >= 0 and
+                sell_percent > 0 and
+                cache.rhodes_island.materials_resouce[resouce_id] > sell_stock
+            ):
+                price_now, percent_sell = get_resouce_price(resouce_id, False)
+                if percent_sell + 100 >= sell_percent:
+                    need_qty = cache.rhodes_island.materials_resouce[resouce_id] - sell_stock
+                    trade_ret = perform_trade(resouce_id, need_qty, False)
+                    if trade_ret:
+                        summary_lines.append(
+                            _("  · 自动卖出{0} x {1}，单价{2}，总计{3}").format(
+                                _(resouce_data.name),
+                                trade_ret["quantity"],
+                                trade_ret["price"],
+                                trade_ret["total_price"],
+                            )
+                        )
+
             # 自动买入
             if (
                 buy_on and
@@ -208,35 +229,12 @@ def auto_trade_resources() -> None:
                 cache.rhodes_island.materials_resouce[resouce_id] < buy_stock
             ):
                 price_now, percent_buy = get_resouce_price(resouce_id, True)
-                base_price = resouce_data.price if resouce_data.price > 0 else price_now
-                if price_now <= base_price * buy_percent / 100:
+                if percent_buy + 100 <= buy_percent:
                     need_qty = buy_stock - cache.rhodes_island.materials_resouce[resouce_id]
                     trade_ret = perform_trade(resouce_id, need_qty, True)
                     if trade_ret:
                         summary_lines.append(
                             _("  · 自动买入{0} x {1}，单价{2}，总计{3}").format(
-                                _(resouce_data.name),
-                                trade_ret["quantity"],
-                                trade_ret["price"],
-                                trade_ret["total_price"],
-                            )
-                        )
-
-            # 自动卖出
-            if (
-                sell_on and
-                sell_stock >= 0 and
-                sell_percent > 0 and
-                cache.rhodes_island.materials_resouce[resouce_id] > sell_stock
-            ):
-                price_now, percent_sell = get_resouce_price(resouce_id, False)
-                base_price = resouce_data.price if resouce_data.price > 0 else price_now
-                if price_now >= base_price * sell_percent / 100:
-                    need_qty = cache.rhodes_island.materials_resouce[resouce_id] - sell_stock
-                    trade_ret = perform_trade(resouce_id, need_qty, False)
-                    if trade_ret:
-                        summary_lines.append(
-                            _("  · 自动卖出{0} x {1}，单价{2}，总计{3}").format(
                                 _(resouce_data.name),
                                 trade_ret["quantity"],
                                 trade_ret["price"],
