@@ -1226,6 +1226,16 @@ class Rhodes_Island:
         做饭区的食物数据
         食谱id(str):食物唯一id:食物对象
         """
+        self.makefood_filter_type: List[int] = []
+        """ 做饭筛选：菜谱类型列表，空列表表示不筛选 """
+        self.makefood_filter_difficulty: int = -1
+        """ 做饭筛选：难度档位（-1不限，0简单0-3，1中等4-6，2困难7+） """
+        self.makefood_filter_time: int = -1
+        """ 做饭筛选：时间档位（-1不限，0快速0-30，1中等31-60，2耗时61+） """
+        self.makefood_sort_type: int = 0
+        """ 做饭排序：排序维度（0无，1难度，2时间，3类型） """
+        self.makefood_sort_order: int = 0
+        """ 做饭排序：排序顺序（0升序，1降序） """
 
         # 医疗部
         self.medical_patients_today: Dict[int, Any] = {}
