@@ -147,13 +147,13 @@ class InteractionMinorType:
 
 # 大类型的中文名称映射
 MAJOR_TYPE_NAMES = {
-    InteractionMajorType.MOUTH: "嘴",
-    InteractionMajorType.HAND: "手",
-    InteractionMajorType.SEX: "性爱",
-    InteractionMajorType.PENIS: "阴茎",
-    InteractionMajorType.TOOL: "道具",
-    InteractionMajorType.ARTS: "技艺",
-    InteractionMajorType.OTHER: "其他",
+    InteractionMajorType.MOUTH: "",
+    InteractionMajorType.HAND: "",
+    InteractionMajorType.SEX: "",
+    InteractionMajorType.PENIS: "",
+    InteractionMajorType.TOOL: "",
+    InteractionMajorType.ARTS: "",
+    InteractionMajorType.OTHER: "",
 }
 
 # 大类型的显示顺序
